@@ -1,0 +1,42 @@
+# Contributor:
+# Maintainer:
+pkgname="emptty"
+_repo="https://github.com/tvrzna/emptty"
+builddir="${srcdir}/${pkgname}"
+options="!check"
+initial_prepare() {
+    git clone "${_repo}" || return 1
+    cd "$pkgname"
+    _pkgver="$(git log -1 --date=short --format="%ad" | sed 's/-/./g')"
+    cd "$startdir"
+}
+initial_prepare
+pkgver="${_pkgver}_git"
+pkgrel=0
+pkgdesc="Dead simple CLI Display Manager on TTY"
+url="https://github.com/tvrzna/emptty"
+arch="all"
+license="MIT License"
+depends="libx11 linux-pam"
+makedepends="git go gcc linux-pam-dev"
+source=""
+
+prepare() {
+    default_prepare
+    mv "${startdir}/${pkgname}" "$srcdir"
+}
+
+build() {
+    cd "${builddir}"
+    # building utmp, musl doesn't has support for it
+    make build TAGS=noutmp
+}
+
+package() {
+    cd "${builddir}"
+    make DESTDIR="$pkgdir/" install
+    make DESTDIR="$pkgdir/" install-pam
+    make DESTDIR="$pkgdir/" install-config
+    make DESTDIR="$pkgdir/" install-openrc
+    echo "Disable your DM and run 'rc-update add emptty default' to enable emptty at the next boot"
+}
